@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project name="PostgreSQL@localhost" id="Project_38070da" template="Default" database="PostgreSQL" >
+	<schema name="nds" catalogname="market_eye" schemaname="nds" >
+		<table name="exchange" >
+			<column name="exchange_name" type="varchar" length="10" decimal="0" jt="12" mandatory="y" />
+			<column name="description" type="text" decimal="0" jt="12" />
+			<index name="exchange_pkey" unique="PRIMARY_KEY" >
+				<column name="exchange_name" />
+			</index>
+		</table>
+		<table name="symbol" >
+			<column name="exchange_name" type="varchar" length="10" decimal="0" jt="12" mandatory="y" />
+			<column name="symbol" type="varchar" length="10" decimal="0" jt="12" mandatory="y" />
+			<column name="description" type="text" decimal="0" jt="12" />
+			<index name="symbol_pkey" unique="PRIMARY_KEY" >
+				<column name="exchange_name" />
+				<column name="symbol" />
+			</index>
+			<index name="symbol_ix001" unique="NORMAL" >
+				<column name="symbol" />
+			</index>
+			<index name="pk_symbol" unique="UNIQUE" >
+				<column name="exchange_name" />
+			</index>
+			<fk name="exchange_fk" to_schema="nds" to_table="exchange" >
+				<fk_column name="exchange_name" pk="exchange_name" />
+			</fk>
+		</table>
+		<table name="symbol_data" >
+			<column name="exchange_name" type="varchar" length="10" decimal="0" jt="12" mandatory="y" />
+			<column name="symbol" type="varchar" length="10" decimal="0" jt="12" mandatory="y" />
+			<column name="date_trade" type="date" length="13" decimal="0" jt="91" mandatory="y" />
+			<column name="open_price" type="real" length="8" decimal="8" jt="7" mandatory="y" />
+			<column name="high_price" type="real" length="8" decimal="8" jt="7" mandatory="y" />
+			<column name="low_price" type="real" length="8" decimal="8" jt="7" mandatory="y" />
+			<column name="close_price" type="real" length="8" decimal="8" jt="7" mandatory="y" />
+			<column name="volume" type="integer" length="10" decimal="0" jt="4" mandatory="y" />
+			<index name="symbol_data_pkey" unique="PRIMARY_KEY" >
+				<column name="exchange_name" />
+				<column name="symbol" />
+				<column name="date_trade" />
+			</index>
+			<index name="symbol_data_ix001" unique="NORMAL" >
+				<column name="symbol" />
+			</index>
+			<index name="symbol_data_ix002" unique="NORMAL" >
+				<column name="date_trade" />
+			</index>
+			<fk name="symbol_fk" to_schema="nds" to_table="symbol" delete_action="restrict" update_action="restrict" >
+				<fk_column name="symbol" pk="symbol" />
+			</fk>
+		</table>
+		<table name="trade_pair" >
+			<column name="system_id" type="serial" length="10" decimal="0" jt="4" mandatory="y" />
+			<column name="exchange_name" type="varchar" length="10" decimal="0" jt="12" mandatory="y" />
+			<column name="symbol" type="varchar" length="10" decimal="0" jt="12" mandatory="y" />
+			<column name="entry_date" type="date" jt="91" />
+			<column name="exit_date" type="date" jt="91" />
+			<column name="entry_price" type="real" jt="7" />
+			<column name="exit_price" type="real" jt="7" />
+			<index name="trade_pair_pkey" unique="PRIMARY_KEY" >
+				<column name="system_id" />
+				<column name="exchange_name" />
+				<column name="symbol" />
+			</index>
+			<index name="trade_pair_ix001" unique="NORMAL" >
+				<column name="exchange_name" />
+			</index>
+			<index name="trade_pair_ix002" unique="NORMAL" >
+				<column name="symbol" />
+			</index>
+			<fk name="trade_system_fk" to_schema="nds" to_table="trade_system" delete_action="restrict" update_action="restrict" >
+				<fk_column name="system_id" pk="system_id" />
+			</fk>
+			<fk name="symbol_fk" to_schema="nds" to_table="symbol" delete_action="restrict" update_action="restrict" >
+				<fk_column name="exchange_name" pk="exchange_name" />
+				<fk_column name="symbol" pk="symbol" />
+			</fk>
+		</table>
+		<table name="trade_system" >
+			<column name="system_id" type="serial" length="10" decimal="0" jt="4" mandatory="y" />
+			<column name="description" type="text" decimal="0" jt="12" mandatory="y" />
+			<index name="trade_system_pkey" unique="PRIMARY_KEY" >
+				<column name="system_id" />
+			</index>
+		</table>
+		<sequence name="trade_pair_system_id_seq" start="1" />
+		<sequence name="trade_system_system_id_seq" start="1" />
+	</schema>
+	<schema name="stg" catalogname="market_eye" schemaname="stg" >
+		<table name="symbol_data" >
+			<column name="exchange_name" type="varchar" length="10" jt="12" />
+			<column name="symbol" type="varchar" length="10" decimal="0" jt="12" />
+			<column name="trade_date" type="date" length="13" decimal="0" jt="91" />
+			<column name="open_price" type="real" length="8" decimal="8" jt="7" />
+			<column name="high_price" type="real" length="8" decimal="8" jt="7" />
+			<column name="low_price" type="real" length="8" decimal="8" jt="7" />
+			<column name="close_price" type="real" length="8" decimal="8" jt="7" />
+			<column name="volume" type="integer" length="10" decimal="0" jt="4" />
+		</table>
+	</schema>
+	<connector name="PostgreSQL@localhost" database="PostgreSQL" driver_class="org.postgresql.Driver" driver_jar="postgresql-42.1.4.jar" driver_desc="Standard" host="localhost" port="5433" instance="market_eye" user="jeremy" passwd="MTBGb3J3YXJk" />
+	<layout name="NDS primary layout" id="Layout_88a4b" show_column_type="y" show_relation="columns" >
+		<entity schema="nds" name="trade_system" color="bcd5f1" x="765" y="75" />
+		<entity schema="nds" name="exchange" color="bfd4f5" x="45" y="255" />
+		<entity schema="nds" name="symbol_data" color="bcd5f1" x="375" y="435" />
+		<entity schema="nds" name="trade_pair" color="bcd5f1" x="735" y="255" />
+		<entity schema="nds" name="symbol" color="bfd4f5" x="345" y="255" />
+		<entity schema="stg" name="symbol_data" color="bcd5f1" x="45" y="585" />
+		<group name="exchange" color="ecf0f7" >
+			<entity schema="nds" name="exchange" />
+			<entity schema="nds" name="symbol" />
+		</group>
+		<script name="Sample SQL Editor" id="Editor_5c1a1be" language="SQL" >
+			<string><![CDATA[SELECT * 
+FROM
+	nds.exchange e;]]></string>
+		</script>
+		<script name="Sql_Editor" id="Editor_ea57b7" language="SQL" >
+			<string><![CDATA[CREATE SCHEMA nds;
+
+CREATE SCHEMA stg;
+
+CREATE SEQUENCE nds.trade_pair_system_id_seq START WITH 1;
+
+CREATE SEQUENCE nds.trade_system_system_id_seq START WITH 1;
+
+CREATE TABLE nds.exchange ( 
+	exchange_name        varchar(10)  NOT NULL,
+	description          text  ,
+	CONSTRAINT exchange_pkey PRIMARY KEY ( exchange_name )
+ );
+
+CREATE TABLE nds.symbol ( 
+	exchange_name        varchar(10)  NOT NULL,
+	symbol               varchar(10)  NOT NULL,
+	description          text  ,
+	CONSTRAINT symbol_pkey PRIMARY KEY ( exchange_name, symbol ),
+	CONSTRAINT pk_symbol UNIQUE ( exchange_name ) 
+ );
+
+CREATE INDEX symbol_ix001 ON nds.symbol ( symbol );
+
+CREATE TABLE nds.symbol_data ( 
+	exchange_name        varchar(10)  NOT NULL,
+	symbol               varchar(10)  NOT NULL,
+	date_trade           date  NOT NULL,
+	open_price           real  NOT NULL,
+	high_price           real  NOT NULL,
+	low_price            real  NOT NULL,
+	close_price          real  NOT NULL,
+	volume               integer  NOT NULL,
+	CONSTRAINT symbol_data_pkey PRIMARY KEY ( exchange_name, symbol, date_trade )
+ );
+
+CREATE TABLE nds.trade_system ( 
+	system_id            serial  NOT NULL,
+	description          text  NOT NULL,
+	CONSTRAINT trade_system_pkey PRIMARY KEY ( system_id )
+ );
+
+CREATE TABLE nds.trade_pair ( 
+	system_id            serial  NOT NULL,
+	exchange_name        varchar(10)  NOT NULL,
+	symbol               varchar(10)  NOT NULL,
+	entry_date           date  ,
+	exit_date            date  ,
+	entry_price          real  ,
+	exit_price           real  ,
+	CONSTRAINT trade_pair_pkey PRIMARY KEY ( system_id, exchange_name, symbol )
+ );
+
+CREATE INDEX trade_pair_ix001 ON nds.trade_pair ( exchange_name );
+
+CREATE INDEX trade_pair_ix002 ON nds.trade_pair ( symbol );
+
+CREATE TABLE stg.symbol_data ( 
+	market               varchar(50)  ,
+	symbol               varchar(10)  ,
+	trade_date           date  ,
+	open_price           real  ,
+	high_price           real  ,
+	low_price            real  ,
+	close_price          real  ,
+	volume               integer  
+ );
+
+ALTER TABLE nds.symbol ADD CONSTRAINT exchange_fk FOREIGN KEY ( exchange_name ) REFERENCES nds.exchange( exchange_name );
+
+ALTER TABLE nds.symbol_data ADD CONSTRAINT symbol_fk FOREIGN KEY ( symbol ) REFERENCES nds.symbol( symbol ) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE nds.trade_pair ADD CONSTRAINT trade_system_fk FOREIGN KEY ( system_id ) REFERENCES nds.trade_system( system_id ) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+ALTER TABLE nds.trade_pair ADD CONSTRAINT symbol_fk FOREIGN KEY ( symbol ) REFERENCES nds.symbol( symbol ) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+]]></string>
+		</script>
+		<query id="Query_2845e57" name="Sample Query Builder" >
+			<query_table schema="nds" name="exchange" alias="e" x="45" y="45" >
+				<column name="exchange_name" />
+				<column name="description" />
+				<query_table schema="nds" name="symbol" alias="s" x="225" y="45" fk="exchange_fk" type="Inner Join" >
+					<column name="exchange_name" />
+					<column name="symbol" />
+				</query_table>
+			</query_table>
+		</query>
+	</layout>
+</project>
