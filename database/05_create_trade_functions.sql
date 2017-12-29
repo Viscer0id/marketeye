@@ -1,6 +1,11 @@
 /*
 -- Backout Script
 
+DROP FUNCTION nds.getTrailingStopValue;
+DROP FUNCTION nds.getProtectiveStopValue;
+DROP FUNCTION nds.activeTrade;
+DROP FUNCTION nds.commentaryPrintln(text,date,text);
+DROP FUNCTION nds.getDaysInTradeCount(date,date,varchar,varchar);
 */
 
 CREATE OR REPLACE FUNCTION nds.getTrailingStopValue(IN inTradeDirection VARCHAR, IN inExchangeName VARCHAR, IN inSymbol VARCHAR, IN inTradeDate DATE, IN inDaysInTrade INT) RETURNS FLOAT
@@ -80,12 +85,34 @@ END;
 $$
 LANGUAGE 'plpgsql';
 
-CREATE OR REPLACE FUNCTION println(IN inputText TEXT) RETURNS TEXT
+CREATE OR REPLACE FUNCTION nds.commentaryPrintln(IN inCommentaryText TEXT, IN inDATE DATE, IN inNewText TEXT) RETURNS TEXT
 AS
 $$
 DECLARE
 BEGIN
-  RETURN '';
+  inCommentaryText := inCommentaryText||TO_CHAR(inDate,'DD-MON-YYYY')||': '||inNewText||E'\r\n';
+  RETURN inCommentaryText;
+END;
+$$
+LANGUAGE 'plpgsql';
+
+CREATE OR REPLACE FUNCTION nds.getDaysInTradeCount(IN inFromDate DATE, IN inToDate DATE, IN inExchangeName VARCHAR, IN inSymbol VARCHAR) RETURNS INT
+AS
+$$
+DECLARE
+  daysCount INT := NULL;
+  daysCountCur NO SCROLL CURSOR FOR select count(*) from nds.symbol_data where exchange_name = inExchangeName and symbol = inSymbol and trade_date >= inFromDate and trade_date <= inToDate;
+BEGIN
+  OPEN daysCountCur;
+  FETCH daysCountCur INTO daysCount;
+  CLOSE daysCountCur;
+
+  IF daysCount IS NULL THEN
+    RAISE EXCEPTION 'getDaysInTradeCount returned NULL';
+  ELSE
+    RETURN daysCount;
+  END IF;
+
 END;
 $$
 LANGUAGE 'plpgsql';
@@ -100,7 +127,48 @@ END;
 $$
 LANGUAGE 'plpgsql';
 
+CREATE OR REPLACE FUNCTION nds.isStopExitTriggered(IN inTradeDirection VARCHAR(5), IN inExchangeName VARCHAR, IN inSymbol VARCHAR, IN inTradeDate DATE, IN inStopValue REAL) RETURNS BOOLEAN
+AS
+$$
+DECLARE
+  lowPrice REAL := NULL;
+  lowPriceCur NO SCROLL CURSOR FOR select low_price from nds.symbol_data where exchange_name = inExchangeName and symbol = inSymbol and trade_date = inTradeDate;
+  highPrice REAL := NULL;
+  highPriceCur NO SCROLL CURSOR FOR select high_price from nds.symbol_data where exchange_name = inExchangeName and symbol = inSymbol and trade_date = inTradeDate;
+BEGIN
+  IF inTradeDirection = 'LONG' THEN
+    -- Trigger when the lowest price of the day is equal to or less than the stop value
+    OPEN lowPriceCur;
+    FETCH lowPriceCur INTO lowPrice;
+    CLOSE lowPriceCur;
 
+    IF lowPrice <= inStopValue THEN
+      RETURN TRUE;
+    ELSE
+      RETURN FALSE;
+    END IF;
+
+  ELSEIF inTradeDirection = 'SHORT' THEN
+    -- Trigger when the highest price of the day is equal to or higher than the stop value
+    OPEN highPriceCur;
+    FETCH highPriceCur INTO highPrice;
+    CLOSE highPriceCur;
+
+    IF highPrice >= inStopValue THEN
+      RETURN TRUE;
+    ELSE
+      RETURN FALSE;
+    END IF;
+
+  END IF;
+
+END;
+$$
+LANGUAGE 'plpgsql';
+
+ALTER FUNCTION nds.getDaysInTradeCount(DATE, DATE, VARCHAR, VARCHAR) OWNER TO jeremy;
 ALTER FUNCTION nds.getTrailingStopValue(VARCHAR, VARCHAR, VARCHAR, DATE, INT) OWNER TO jeremy;
 ALTER FUNCTION nds.getProtectiveStopValue(VARCHAR, VARCHAR, DATE, INT) OWNER TO jeremy;
 ALTER FUNCTION nds.activeTrade(VARCHAR, VARCHAR, DATE) OWNER TO jeremy;
+ALTER FUNCTION nds.commentaryPrintln(TEXT, DATE, TEXT) OWNER TO jeremy;
+ALTER FUNCTION nds.isTrailingStopExitTriggered(VARCHAR, VARCHAR, VARCHAR, REAL, DATE) OWNER TO jeremy;
