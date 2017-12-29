@@ -3,17 +3,16 @@
 
 -- STG Schema
 DROP TABLE stg.symbol_data;
-DROP SCHEMA stg;
 
 -- NDS Schema
+DROP VIEW nds.trade_summary;
+DROP VIEW nds.trade_stats;
 DROP TABLE nds.trade_pair;
 DROP TABLE nds.symbol_data;
 DROP TABLE nds.trade_system;
 DROP TABLE nds.symbol;
 DROP TABLE nds.exchange;
-DROP FUNCTION nds.ts_1;
-DROP SCHEMA nds;
- */
+*/
 
 -- STG Schema
 CREATE SCHEMA stg;
@@ -95,16 +94,19 @@ CREATE TABLE nds.trade_pair (
 	system_id            int  NOT NULL,
 	exchange_name        varchar(10)  NOT NULL,
 	symbol               varchar(10)  NOT NULL,
-	entry_date           date  ,
+	entry_date           date  NOT NULL,
 	exit_date            date  ,
 	entry_price          real  ,
 	exit_price           real  ,
-	CONSTRAINT trade_pair_pkey PRIMARY KEY ( system_id, exchange_name, symbol )
+	trade_commentary		 text,
+	CONSTRAINT trade_pair_pkey PRIMARY KEY ( system_id, exchange_name, symbol, entry_date )
  );
 
 CREATE INDEX trade_pair_ix001 ON nds.trade_pair ( exchange_name );
 
 CREATE INDEX trade_pair_ix002 ON nds.trade_pair ( symbol );
+
+CREATE INDEX trade_pair_ix003 ON nds.trade_pair ( entry_date );
 
 ALTER TABLE nds.symbol ADD CONSTRAINT exchange_fk FOREIGN KEY ( exchange_name ) REFERENCES nds.exchange( exchange_name );
 
