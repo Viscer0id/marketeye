@@ -70,9 +70,9 @@ AS
 $$
 DECLARE
   exitDate DATE := NULL;
-  tradePairCur NO SCROLL CURSOR (inExchangeName VARCHAR, inSymbol VARCHAR, inEntryDate DATE) FOR select exit_date from nds.trade_pair where exchange_name = inExchangeName and symbol = inSymbol and entry_date = inEntryDate;
+  tradePairCur NO SCROLL CURSOR FOR select exit_date from nds.trade_pair where exchange_name = inExchangeName and symbol = inSymbol and entry_date = inEntryDate;
 BEGIN
-  OPEN tradePairCur(inExchangeName, inSymbol, inEntryDate);
+  OPEN tradePairCur;
   FETCH tradePairCur INTO exitDate;
   CLOSE tradePairCur;
 
@@ -117,32 +117,20 @@ END;
 $$
 LANGUAGE 'plpgsql';
 
-CREATE OR REPLACE FUNCTION stopExitTriggered(IN inputText TEXT) RETURNS BOOLEAN
-AS
-$$
-DECLARE
-BEGIN
-  RETURN '';
-END;
-$$
-LANGUAGE 'plpgsql';
-
 CREATE OR REPLACE FUNCTION nds.isStopExitTriggered(IN inTradeDirection VARCHAR(5), IN inExchangeName VARCHAR, IN inSymbol VARCHAR, IN inTradeDate DATE, IN inStopValue REAL) RETURNS BOOLEAN
 AS
 $$
 DECLARE
-  lowPrice REAL := NULL;
-  lowPriceCur NO SCROLL CURSOR FOR select low_price from nds.symbol_data where exchange_name = inExchangeName and symbol = inSymbol and trade_date = inTradeDate;
-  highPrice REAL := NULL;
-  highPriceCur NO SCROLL CURSOR FOR select high_price from nds.symbol_data where exchange_name = inExchangeName and symbol = inSymbol and trade_date = inTradeDate;
+  symbolDataCur NO SCROLL CURSOR FOR select * from nds.symbol_data where exchange_name = inExchangeName and symbol = inSymbol and trade_date = inTradeDate;
+  symbolDataRec nds.symbol_data%ROWTYPE;
 BEGIN
+  OPEN symbolDataCur;
+  FETCH symbolDataCur INTO symbolDataRec;
+  CLOSE symbolDataCur;
+
   IF inTradeDirection = 'LONG' THEN
     -- Trigger when the lowest price of the day is equal to or less than the stop value
-    OPEN lowPriceCur;
-    FETCH lowPriceCur INTO lowPrice;
-    CLOSE lowPriceCur;
-
-    IF lowPrice <= inStopValue THEN
+    IF symbolDataRec.low_price <= inStopValue THEN
       RETURN TRUE;
     ELSE
       RETURN FALSE;
@@ -150,18 +138,51 @@ BEGIN
 
   ELSEIF inTradeDirection = 'SHORT' THEN
     -- Trigger when the highest price of the day is equal to or higher than the stop value
-    OPEN highPriceCur;
-    FETCH highPriceCur INTO highPrice;
-    CLOSE highPriceCur;
-
-    IF highPrice >= inStopValue THEN
+    IF symbolDataRec.high_price >= inStopValue THEN
       RETURN TRUE;
     ELSE
       RETURN FALSE;
     END IF;
 
   END IF;
+END;
+$$
+LANGUAGE 'plpgsql';
 
+CREATE OR REPLACE FUNCTION nds.getStopExitValue(IN inTradeDirection VARCHAR(5), IN inExchangeName VARCHAR, IN inSymbol VARCHAR, IN inTradeDate DATE, IN inStopValue REAL) RETURNS REAL
+AS
+$$
+DECLARE
+  symbolDataCur NO SCROLL CURSOR FOR select * from nds.symbol_data where exchange_name = inExchangeName and symbol = inSymbol and trade_date = inTradeDate;
+  symbolDataRec nds.symbol_data%ROWTYPE;
+BEGIN
+  OPEN symbolDataCur;
+  FETCH symbolDataCur INTO symbolDataRec;
+  CLOSE symbolDataCur;
+
+  IF inTradeDirection = 'LONG' THEN
+    IF symbolDataRec.open_price <= inStopValue THEN
+      -- The symbol has gapped down and is opening on or below the stop value. In this case the exit trade will trigger but the best price we can hope for is the open price.
+      RETURN symbolDataRec.open_price;
+    ELSEIF symbolDataRec.low_price <= inStopValue THEN
+      -- The symbol was above the stop value, the price action has moved down through it and triggered the exit. In this case the best price we can hope for is our stop price.
+      RETURN inStopValue;
+    ELSE
+      RAISE 'Critical error determining the stop value for a long trade';
+    END IF;
+  ELSEIF inTradeDirection = 'SHORT' THEN
+    IF symbolDataRec.open_price >= inStopValue THEN
+      -- The symbol has gapped up and is opening on or above the stop value. In this case the exit trade will trigger but the best price we can hope for is the open price.
+      RETURN symbolDataRec.open_price;
+    ELSEIF symbolDataRec.high_price >= inStopValue THEN
+      -- The symbol was below the stop value, the price action has moved up through it and triggered the exit. In this case the best price we can hope for is our stop price.
+      RETURN inStopValue;
+    ELSE
+      RAISE 'Critical error determining the stop value for a short trade';
+    END IF;
+  ELSE
+    RAISE 'Trade direction of either LONG or SHORT was not specified';
+  END IF;
 END;
 $$
 LANGUAGE 'plpgsql';
@@ -171,4 +192,5 @@ ALTER FUNCTION nds.getTrailingStopValue(VARCHAR, VARCHAR, VARCHAR, DATE, INT) OW
 ALTER FUNCTION nds.getProtectiveStopValue(VARCHAR, VARCHAR, DATE, INT) OWNER TO jeremy;
 ALTER FUNCTION nds.activeTrade(VARCHAR, VARCHAR, DATE) OWNER TO jeremy;
 ALTER FUNCTION nds.commentaryPrintln(TEXT, DATE, TEXT) OWNER TO jeremy;
-ALTER FUNCTION nds.isTrailingStopExitTriggered(VARCHAR, VARCHAR, VARCHAR, REAL, DATE) OWNER TO jeremy;
+ALTER FUNCTION nds.isStopExitTriggered(VARCHAR, VARCHAR, VARCHAR, DATE,REAL) OWNER TO jeremy;
+ALTER FUNCTION nds.getStopExitValue(VARCHAR, VARCHAR, VARCHAR, DATE, REAL) OWNER TO jeremy;

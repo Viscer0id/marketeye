@@ -87,6 +87,7 @@ CREATE INDEX symbol_data_ix002 ON nds.symbol_data ( trade_date );
 CREATE TABLE nds.trade_system (
 	system_id            int  NOT NULL,
 	description          text  NOT NULL,
+  trade_direction      VARCHAR(5) NOT NULL,
 	CONSTRAINT trade_system_pkey PRIMARY KEY ( system_id )
  );
 
@@ -99,6 +100,7 @@ CREATE TABLE nds.trade_pair (
 	entry_price          real  ,
 	exit_price           real  ,
 	trade_commentary		 text,
+	days_in_trade				 int,
 	CONSTRAINT trade_pair_pkey PRIMARY KEY ( system_id, exchange_name, symbol, entry_date )
  );
 
