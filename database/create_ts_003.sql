@@ -39,7 +39,7 @@ BEGIN
       END IF;
 
       -- Entry
-      IF (activeTrade IS FALSE AND tradeDataRec.next1_trade_date IS NOT NULL AND tradeDataRec.mov30_spread_z_score >= 2 AND tradeDataRec.donchian_channel_30 = 'UPTREND' AND tradeDataRec.close_price >= tradeDataRec.upper_third) THEN
+      IF (activeTrade IS FALSE AND tradeDataRec.next1_trade_date IS NOT NULL AND tradeDataRec.mov30_spread_z_score >= 2 AND tradeDataRec.donchian_channel_30 = 'DOWNTREND' AND tradeDataRec.close_price >= tradeDataRec.upper_third) THEN
         activeTrade := TRUE;
         daysInTrade := 1;
         tradeCommentary := '';
