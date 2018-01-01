@@ -84,6 +84,9 @@ CREATE TABLE nds.symbol_data (
   mov30std_volume	  REAL,
   mov30_spread_z_score	REAL,
   mov30_volume_z_score	REAL,
+  lower_third   REAL,
+  upper_third   REAL,
+  mid_point     REAL,
 	CONSTRAINT symbol_data_pkey PRIMARY KEY ( exchange_name, symbol, trade_date )
  );
 

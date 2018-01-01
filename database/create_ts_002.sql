@@ -39,7 +39,7 @@ BEGIN
       END IF;
 
       -- Entry
-      IF (activeTrade IS FALSE AND tradeDataRec.donchian_channel_30 = 'DOWNTREND') THEN
+      IF (activeTrade IS FALSE AND tradeDataRec.next1_trade_date IS NOT NULL AND tradeDataRec.donchian_channel_30 = 'DOWNTREND') THEN
         activeTrade := TRUE;
         daysInTrade := 1;
         tradeCommentary := '';

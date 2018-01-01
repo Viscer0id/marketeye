@@ -33,10 +33,12 @@ INSERT INTO nds.symbol_data
     ,STDDEV(high_price - low_price) OVER  (partition by exchange_name, symbol ORDER BY trade_date ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) MOV30STD_SPREAD
     ,AVG(volume)  OVER  (partition by exchange_name, symbol ORDER BY trade_date ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) MOV30AVG_VOLUME
     ,STDDEV(volume) OVER  (partition by exchange_name, symbol ORDER BY trade_date ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) MOV30STD_VOLUME
+    ,low_price + ((high_price - low_price)/3) LOWER_THIRD
+    ,high_price - ((high_price - low_price)/3) UPPER_THIRD
+    ,low_price + ((high_price - low_price)/2) MID_POINT
   FROM
     stg.symbol_data
   ),
---   base_bartype AS
     base_1 AS
   (
   SELECT
@@ -56,7 +58,6 @@ INSERT INTO nds.symbol_data
     ,(b.VOLUME -b.MOV30AVG_VOLUME)/NULLIF(b.MOV30STD_VOLUME,0) AS MOV30_VOLUME_Z_SCORE
   FROM base_0 b
   ),
---   base_bartype_lag AS
     base_2 as
   (
   SELECT
@@ -126,5 +127,8 @@ INSERT INTO nds.symbol_data
       mov30avg_volume,
       mov30std_volume,
       mov30_spread_z_score,
-      mov30_volume_z_score
+      mov30_volume_z_score,
+      lower_third,
+      upper_third,
+      mid_point
     FROM base_3;

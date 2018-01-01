@@ -5,16 +5,18 @@ DELETE FROM nds.trade_system WHERE system_id = 1;
 DROP FUNCTION nds.ts_1(VARCHAR, VARCHAR);
 */
 
-INSERT INTO nds.trade_system VALUES (1,'LONG','Donchian Channel trade system; trade long when the current high is greater than the highest high of the past 30 days');
+INSERT INTO nds.trade_system VALUES (3,'LONG','Basic Wyckoff long trade after spring');
 
-CREATE OR REPLACE FUNCTION nds.ts_1(inExchangeName VARCHAR, inSymbol VARCHAR) RETURNS VOID
+CREATE OR REPLACE FUNCTION nds.ts_3(inExchangeName VARCHAR, inSymbol VARCHAR) RETURNS VOID
 AS
 $$
 DECLARE
-  systemId INTEGER := 1;
+  systemId INTEGER := 3;
   tradeDirection VARCHAR(5) := 'LONG';
-	tradeDataRec nds.symbol_data%ROWTYPE;
+
+  tradeDataRec nds.symbol_data%ROWTYPE;
   entryRec nds.symbol_data%ROWTYPE;
+
   activeTrade BOOLEAN := FALSE;
   daysInTrade INTEGER := 0;
   lookBack INTEGER := 30;
@@ -39,7 +41,7 @@ BEGIN
       END IF;
 
       -- Entry
-      IF (activeTrade IS FALSE AND tradeDataRec.next1_trade_date IS NOT NULL AND tradeDataRec.donchian_channel_30 = 'UPTREND') THEN
+      IF (activeTrade IS FALSE AND tradeDataRec.next1_trade_date IS NOT NULL AND tradeDataRec.mov30_spread_z_score >= 2 AND tradeDataRec.donchian_channel_30 = 'UPTREND' AND tradeDataRec.close_price >= tradeDataRec.upper_third) THEN
         activeTrade := TRUE;
         daysInTrade := 1;
         tradeCommentary := '';
@@ -66,18 +68,10 @@ BEGIN
         activeTrade := FALSE;
       END IF;
 
-      -- Signal exit
-      IF (activeTrade IS TRUE AND tradeDataRec.donchian_channel_30 = 'DOWNTREND') THEN
-        tradeCommentary := nds.commentaryPrintLn(tradeCommentary, tradeDataRec.trade_date, 'trade exit identified');
-        FETCH tradeDataCur INTO tradeDataRec; -- Increment the cursor one day. We do this because we exit on the morning after identifying the exit.
-        UPDATE nds.trade_pair SET exit_date = tradeDataRec.trade_date, days_in_trade = daysInTrade, exit_price = tradeDataRec.open_price, trade_commentary = tradeCommentary WHERE system_id = systemId AND exchange_name = inExchangeName AND symbol = inSymbol AND entry_date = entryRec.trade_date;
-        activeTrade := FALSE;
-      END IF;
-
     END LOOP;
     CLOSE tradeDataCur;
 END;
 $$
 LANGUAGE 'plpgsql';
 
-ALTER FUNCTION nds.ts_1 OWNER TO jeremy;
+ALTER FUNCTION nds.ts_3 OWNER TO jeremy;
