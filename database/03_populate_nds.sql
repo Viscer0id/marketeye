@@ -4,7 +4,7 @@ INSERT INTO nds.symbol (exchange_name, symbol)
   SELECT DISTINCT exchange_name, symbol FROM stg.symbol_data;
 
 INSERT INTO nds.symbol_data
-  WITH base AS
+  WITH base_0 AS
   (
   SELECT
     exchange_name
@@ -28,10 +28,16 @@ INSERT INTO nds.symbol_data
     ,AVG(close_price) OVER (partition by exchange_name, symbol ORDER BY trade_date ROWS BETWEEN 50 PRECEDING AND CURRENT ROW) SMA_50
     ,MAX(high_price) OVER  (partition by exchange_name, symbol ORDER BY trade_date ROWS BETWEEN 31 PRECEDING AND 1 PRECEDING ) DONCHIAN_30_HIGH
     ,MIN(low_price) OVER  (partition by exchange_name, symbol ORDER BY trade_date ROWS BETWEEN 31 PRECEDING AND 1 PRECEDING) DONCHIAN_30_LOW
+    ,high_price - low_price SPREAD
+    ,AVG(high_price - low_price) OVER  (partition by exchange_name, symbol ORDER BY trade_date ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) MOV30AVG_SPREAD
+    ,STDDEV(high_price - low_price) OVER  (partition by exchange_name, symbol ORDER BY trade_date ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) MOV30STD_SPREAD
+    ,AVG(volume)  OVER  (partition by exchange_name, symbol ORDER BY trade_date ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) MOV30AVG_VOLUME
+    ,STDDEV(volume) OVER  (partition by exchange_name, symbol ORDER BY trade_date ROWS BETWEEN 30 PRECEDING AND CURRENT ROW) MOV30STD_VOLUME
   FROM
     stg.symbol_data
   ),
-  base_bartype AS
+--   base_bartype AS
+    base_1 AS
   (
   SELECT
     b.*
@@ -46,18 +52,21 @@ INSERT INTO nds.symbol_data
       WHEN (b.high_price <= b.prior1_high_price) AND (b.low_price >= b.prior1_low_price) THEN 'INSIDE'
       WHEN (b.high_price > b.prior1_high_price) AND (b.low_price < b.prior1_low_price) THEN 'OUTSIDE'
     END AS bar_type
-  FROM base b
+    ,(b.SPREAD - b.MOV30AVG_SPREAD)/NULLIF(b.MOV30STD_SPREAD,0) AS MOV30_SPREAD_Z_SCORE
+    ,(b.VOLUME -b.MOV30AVG_VOLUME)/NULLIF(b.MOV30STD_VOLUME,0) AS MOV30_VOLUME_Z_SCORE
+  FROM base_0 b
   ),
-  base_bartype_lag AS
+--   base_bartype_lag AS
+    base_2 as
   (
   SELECT
-    bb.*
+    b1.*
     ,lag(SMA_15_50_change, 1) over (partition by exchange_name, symbol ORDER BY trade_date) prior1_SMA_15_50_change
     ,lag(bar_type, 1) over (partition by exchange_name, symbol ORDER BY trade_date) prior1_bar_type
   FROM
-    base_bartype bb
+    base_1 b1
   ),
-  base_bartype_lag_peak_trough_gann_swing AS
+  base_3 AS
   (
   SELECT
     bbl.*
@@ -78,7 +87,44 @@ INSERT INTO nds.symbol_data
       WHEN (bbl.low_price<bbl.prior1_low_price) AND (bbl.prior1_low_price<bbl.prior2_low_price) AND (bbl.prior2_low_price<bbl.prior3_low_price) THEN 'DOWNSWING'
     END AS trend_gann_3day_swing
   FROM
-    base_bartype_lag bbl
+    base_2 bbl
   )
-   SELECT * FROM base_bartype_lag_peak_trough_gann_swing;
-
+    SELECT
+      exchange_name,
+      symbol,
+      trade_date,
+      open_price,
+      high_price,
+      low_price,
+      close_price,
+      volume,
+      prior1_trade_date,
+      prior1_high_price,
+      prior1_low_price,
+      prior2_high_price,
+      prior2_low_price,
+      prior3_high_price,
+      prior3_low_price,
+      next1_trade_date,
+      next1_open_price,
+      sma_15,
+      sma_50,
+      donchian_30_high,
+      donchian_30_low,
+      sma_15_50_change,
+      donchian_channel_30,
+      bar_type,
+      prior1_sma_15_50_change,
+      prior1_bar_type,
+      sma_15_50_crossover,
+      trend_peak_trough,
+      trend_gann_2day_swing,
+      trend_gann_3day_swing,
+      spread,
+      mov30avg_spread,
+      mov30std_spread,
+      mov30avg_volume,
+      mov30std_volume,
+      mov30_spread_z_score,
+      mov30_volume_z_score
+    FROM base_3;

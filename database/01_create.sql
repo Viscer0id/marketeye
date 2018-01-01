@@ -77,6 +77,13 @@ CREATE TABLE nds.symbol_data (
 	trend_peak_trough    varchar(10)  ,
 	trend_gann_2day_swing varchar(10)  ,
 	trend_gann_3day_swing varchar(10) ,
+  spread	          REAL,
+  mov30avg_spread	  REAL,
+  mov30std_spread	  REAL,
+  mov30avg_volume	  REAL,
+  mov30std_volume	  REAL,
+  mov30_spread_z_score	REAL,
+  mov30_volume_z_score	REAL,
 	CONSTRAINT symbol_data_pkey PRIMARY KEY ( exchange_name, symbol, trade_date )
  );
 
