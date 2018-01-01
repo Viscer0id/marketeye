@@ -1,8 +1,8 @@
 /*
 -- Backout Script
 
-DELETE FROM nds.trade_system WHERE system_id = 2;
-DROP FUNCTION nds.ts_2(VARCHAR, VARCHAR);
+DELETE FROM nds.trade_system WHERE system_id = 3;
+DROP FUNCTION nds.ts_3(VARCHAR, VARCHAR);
 */
 
 INSERT INTO nds.trade_system VALUES (3,'LONG','Basic Wyckoff long trade after spring');
