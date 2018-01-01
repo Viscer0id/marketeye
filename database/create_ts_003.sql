@@ -1,8 +1,8 @@
 /*
 -- Backout Script
 
-DELETE FROM nds.trade_system WHERE system_id = 1;
-DROP FUNCTION nds.ts_1(VARCHAR, VARCHAR);
+DELETE FROM nds.trade_system WHERE system_id = 2;
+DROP FUNCTION nds.ts_2(VARCHAR, VARCHAR);
 */
 
 INSERT INTO nds.trade_system VALUES (3,'LONG','Basic Wyckoff long trade after spring');
@@ -13,10 +13,8 @@ $$
 DECLARE
   systemId INTEGER := 3;
   tradeDirection VARCHAR(5) := 'LONG';
-
   tradeDataRec nds.symbol_data%ROWTYPE;
   entryRec nds.symbol_data%ROWTYPE;
-
   activeTrade BOOLEAN := FALSE;
   daysInTrade INTEGER := 0;
   lookBack INTEGER := 30;
