@@ -1,18 +1,18 @@
 /*
 -- Backout Script
 
-DELETE FROM nds.trade_system WHERE system_id = 1;
-DROP FUNCTION nds.ts_1(VARCHAR, VARCHAR);
+DELETE FROM nds.trade_system WHERE system_id = 2;
+DROP FUNCTION nds.ts_2(VARCHAR, VARCHAR);
 */
 
-INSERT INTO nds.trade_system VALUES (1,'LONG','Donchian Channel trade system; trade long when the current high is greater than the highest high of the past 30 days');
+INSERT INTO nds.trade_system VALUES (2,'SHORT','Donchian Channel trade system; trade short when the current low is lower than the lowest low of the past 30 days');
 
-CREATE OR REPLACE FUNCTION nds.ts_1(inExchangeName VARCHAR, inSymbol VARCHAR) RETURNS VOID
+CREATE OR REPLACE FUNCTION nds.ts_2(inExchangeName VARCHAR, inSymbol VARCHAR) RETURNS VOID
 AS
 $$
 DECLARE
-  systemId INTEGER := 1;
-  tradeDirection VARCHAR(5) := 'LONG';
+  systemId INTEGER := 2;
+  tradeDirection VARCHAR(5) := 'SHORT';
 	tradeDataRec nds.symbol_data%ROWTYPE;
   entryRec nds.symbol_data%ROWTYPE;
   activeTrade BOOLEAN := FALSE;
@@ -39,7 +39,7 @@ BEGIN
       END IF;
 
       -- Entry
-      IF (activeTrade IS FALSE AND tradeDataRec.donchian_channel_30 = 'UPTREND') THEN
+      IF (activeTrade IS FALSE AND tradeDataRec.donchian_channel_30 = 'DOWNTREND') THEN
         activeTrade := TRUE;
         daysInTrade := 1;
         tradeCommentary := '';
@@ -59,15 +59,15 @@ BEGIN
       END IF;
 
       -- Stoploss exit
-      IF (activeTrade IS TRUE AND nds.isStopExitTriggered(tradeDirection, inExchangeName, inSymbol, tradeDataRec.trade_date, GREATEST(trailingStop,protectiveStop))) THEN
+      IF (activeTrade IS TRUE AND nds.isStopExitTriggered(tradeDirection, inExchangeName, inSymbol, tradeDataRec.trade_date, LEAST(trailingStop,protectiveStop))) THEN
         tradeCommentary := nds.commentaryPrintLn(tradeCommentary, tradeDataRec.trade_date, 'stoploss triggered, exiting the trade');
-        stopExitValue := nds.getStopExitValue(tradeDirection, inExchangeName, inSymbol, tradeDataRec.trade_date, GREATEST(trailingStop,protectiveStop));
+        stopExitValue := nds.getStopExitValue(tradeDirection, inExchangeName, inSymbol, tradeDataRec.trade_date, LEAST(trailingStop,protectiveStop));
         UPDATE nds.trade_pair SET exit_date = tradeDataRec.trade_date, days_in_trade = daysInTrade, exit_price = stopExitValue, trade_commentary = tradeCommentary WHERE system_id = systemId AND exchange_name = inExchangeName AND symbol = inSymbol AND entry_date = entryRec.trade_date;
         activeTrade := FALSE;
       END IF;
 
       -- Signal exit
-      IF (activeTrade IS TRUE AND tradeDataRec.donchian_channel_30 = 'DOWNTREND') THEN
+      IF (activeTrade IS TRUE AND tradeDataRec.donchian_channel_30 = 'UPTREND') THEN
         tradeCommentary := nds.commentaryPrintLn(tradeCommentary, tradeDataRec.trade_date, 'trade exit identified');
         FETCH tradeDataCur INTO tradeDataRec; -- Increment the cursor one day. We do this because we exit on the morning after identifying the exit.
         UPDATE nds.trade_pair SET exit_date = tradeDataRec.trade_date, days_in_trade = daysInTrade, exit_price = tradeDataRec.open_price, trade_commentary = tradeCommentary WHERE system_id = systemId AND exchange_name = inExchangeName AND symbol = inSymbol AND entry_date = entryRec.trade_date;
@@ -80,4 +80,4 @@ END;
 $$
 LANGUAGE 'plpgsql';
 
-ALTER FUNCTION nds.ts_1 OWNER TO jeremy;
+ALTER FUNCTION nds.ts_2 OWNER TO jeremy;

@@ -20,22 +20,24 @@ SELECT
   trade_commentary
 FROM
   nds.trade_pair
-  JOIN nds.trade_system on trade_pair.system_id = trade_system.system_id
 ORDER BY
   exchange_name
   , symbol
+  , trade_direction
   , entry_date;
 
 create or replace view nds.trade_summary as
 select
   exchange_name
   ,symbol
+  ,trade_direction
   ,sum(profit) AS profit
   ,round(avg(days_in_trade),0) as avg_days_in_trade
 from nds.trade_stats
 group BY
   exchange_name
   ,symbol
+  ,trade_direction
 HAVING
   sum(profit) > 0
 order BY

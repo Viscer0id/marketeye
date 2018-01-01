@@ -86,13 +86,14 @@ CREATE INDEX symbol_data_ix002 ON nds.symbol_data ( trade_date );
 
 CREATE TABLE nds.trade_system (
 	system_id            int  NOT NULL,
-	description          text  NOT NULL,
   trade_direction      VARCHAR(5) NOT NULL,
-	CONSTRAINT trade_system_pkey PRIMARY KEY ( system_id )
+  description          text  NOT NULL,
+	CONSTRAINT trade_system_pkey PRIMARY KEY ( system_id, trade_direction )
  );
 
 CREATE TABLE nds.trade_pair (
 	system_id            int  NOT NULL,
+  trade_direction      VARCHAR(5) NOT NULL,
 	exchange_name        varchar(10)  NOT NULL,
 	symbol               varchar(10)  NOT NULL,
 	entry_date           date  NOT NULL,
@@ -101,7 +102,7 @@ CREATE TABLE nds.trade_pair (
 	exit_price           real  ,
 	trade_commentary		 text,
 	days_in_trade				 int,
-	CONSTRAINT trade_pair_pkey PRIMARY KEY ( system_id, exchange_name, symbol, entry_date )
+	CONSTRAINT trade_pair_pkey PRIMARY KEY ( system_id, trade_direction, exchange_name, symbol, entry_date )
  );
 
 CREATE INDEX trade_pair_ix001 ON nds.trade_pair ( exchange_name );
@@ -110,10 +111,12 @@ CREATE INDEX trade_pair_ix002 ON nds.trade_pair ( symbol );
 
 CREATE INDEX trade_pair_ix003 ON nds.trade_pair ( entry_date );
 
+CREATE INDEX trade_system_ix002 ON nds.trade_system (trade_direction);
+
 ALTER TABLE nds.symbol ADD CONSTRAINT exchange_fk FOREIGN KEY ( exchange_name ) REFERENCES nds.exchange( exchange_name );
 
 ALTER TABLE nds.symbol_data ADD CONSTRAINT symbol_fk FOREIGN KEY ( exchange_name, symbol ) REFERENCES nds.symbol( exchange_name, symbol ) ON DELETE RESTRICT ON UPDATE RESTRICT;
 
-ALTER TABLE nds.trade_pair ADD CONSTRAINT trade_system_fk FOREIGN KEY ( system_id ) REFERENCES nds.trade_system( system_id ) ON DELETE RESTRICT ON UPDATE RESTRICT;
+ALTER TABLE nds.trade_pair ADD CONSTRAINT trade_system_fk FOREIGN KEY ( system_id, trade_direction ) REFERENCES nds.trade_system( system_id, trade_direction ) ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 ALTER TABLE nds.trade_pair ADD CONSTRAINT symbol_fk FOREIGN KEY ( exchange_name, symbol ) REFERENCES nds.symbol( exchange_name, symbol ) ON DELETE RESTRICT ON UPDATE RESTRICT;
