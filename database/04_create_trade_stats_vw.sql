@@ -16,7 +16,10 @@ SELECT
   entry_price,
   exit_price,
   days_in_trade,
-  (exit_price - entry_price) AS profit,
+  CASE
+    WHEN trade_direction = 'LONG' THEN (exit_price - entry_price)
+    WHEN trade_direction = 'SHORT' THEN (entry_price - exit_price)
+  END AS profit,
   trade_commentary
 FROM
   nds.trade_pair
