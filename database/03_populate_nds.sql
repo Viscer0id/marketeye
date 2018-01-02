@@ -1,4 +1,5 @@
 INSERT INTO nds.exchange VALUES ('ASX','Australian Securities Exchange');
+INSERT INTO nds.exchange VALUES ('CME','Chicago Mercatile Exchange');
 
 INSERT INTO nds.symbol (exchange_name, symbol)
   SELECT DISTINCT exchange_name, symbol FROM stg.symbol_data;
