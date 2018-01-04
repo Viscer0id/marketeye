@@ -8,6 +8,7 @@ DROP VIEW nds.trade_stats;
 
 create or replace view nds.trade_stats as
 SELECT
+  system_id||'~'||exchange_name||'~'||symbol||'~'||trade_direction as selection_id,
   system_id,
   trade_direction,
   exchange_name,
@@ -35,7 +36,8 @@ create or replace view nds.trade_summary as
 with stats1 as
 (
   select
-    system_id
+    selection_id
+    ,system_id
     , exchange_name
     , symbol
     , trade_direction
@@ -47,13 +49,15 @@ with stats1 as
     , round(avg(days_in_trade), 0) AS avg_days_in_trade
   FROM nds.trade_stats
   GROUP BY
-    system_id
+    selection_id
+    , system_id
     , exchange_name
-  , symbol
-  , trade_direction
+    , symbol
+    , trade_direction
 )
 select
-  system_id
+  selection_id
+  ,system_id
   ,exchange_name
   ,symbol
   ,trade_direction

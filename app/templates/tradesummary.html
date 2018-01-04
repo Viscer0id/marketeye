@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Converts our simple HTML table into a DataTable -->
+<script>
+$(document).ready(function($) {
+    $("#tradesummary").dataTable({
+        paging: false,
+        searching: false,
+        info: false
+    });
+});
+</script>
+
+<!-- Makes each row clickable and returns the data-href field on click -->
+<script>
+$(document).ready(function($){
+        $(".clickable-row").click(function(){
+            // alert($(this).data("href"));
+            window.location = $(this).data("href");
+            }
+        );
+    }
+);
+</script>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-1"></div>
+        <div class="col-md-10">
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-hover" id="tradesummary" width="100%">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th style="text-align:center; vertical-align:middle">System ID</th>
+                            <th style="text-align:center; vertical-align:middle">Exchange</th>
+                            <th style="text-align:center; vertical-align:middle">Symbol</th>
+                            <th style="text-align:center; vertical-align:middle">Direction</th>
+                            <th style="text-align:center; vertical-align:middle">Profitable Trades</th>
+                            <th style="text-align:center; vertical-align:middle">Losing Trades</th>
+                            <th style="text-align:center; vertical-align:middle">P/L Ratio</th>
+                            <th style="text-align:center; vertical-align:middle">Average Days in Trade</th>
+                            <th style="text-align:center; vertical-align:middle">Profit</th>
+                            <th style="text-align:center; vertical-align:middle">Loss</th>
+                            <th style="text-align:center; vertical-align:middle">Overall Position</th>
+                        </tr>
+                    </thead>
+                    {% for item in results.items %}
+                    <tr class="clickable-row" style="cursor: pointer" data-href="{{url_for('tradestats', selectionId=item.selection_id)}}" method="POST">
+                        <TD class="c1">{{item.system_id}}</TD>
+                        <TD class="c2">{{item.exchange_name}}</TD>
+                        <TD class="c3">{{item.symbol}}</TD>
+                        <TD class="c4">{{item.trade_direction}}</TD>
+                        <TD class="c5">{{item.count_profit}}</TD>
+                        <TD class="c6">{{item.count_loss}}</TD>
+                        <TD class="c7">{{item.approx_pl_trade_ratio}}</TD>
+                        <TD class="c8">{{item.avg_days_in_trade}}</TD>
+                        <TD class="c9">{{item.sum_profit}}</TD>
+                        <TD class="c10">{{item.sum_loss}}</TD>
+                        <TD class="c11">{{item.total_position}}</TD>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+            <div class="pagination">
+                <p>Showing pages {{(results.page-1)*20+1}} - {{(results.page-1)*20+20}} of {{results.pages}}</p>
+                {% if not results.has_prev %}Start{% else %}<a href="{{ url_for('tradesummary', page=1) }}">Start</a>{% endif %}
+                {% if results.has_prev %}<a href="{{ url_for('tradesummary', page=results.prev_num) }}">Previous</a>{% else %}Previous{% endif %}
+                {% if results.has_next %}<a href="{{ url_for('tradesummary', page=results.next_num) }}">Next</a>{% else %}Next{% endif %}
+                {% if not results.has_next %}End{% else %}<a href="{{ url_for('tradesummary', page=results.pages) }}">End</a>{% endif %}
+            </div>
+        </div>
+        <div class="col-md-1"></div>
+    </div>
+</div>
+{% endblock %}
