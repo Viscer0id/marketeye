@@ -14,10 +14,17 @@ $(document).ready(function($) {
 
 <!-- Makes each row clickable and returns the data-href field on click -->
 <script>
+function tradeSystem(systemID, exchangeName, symbol) {
+    this.systemID = systemID;
+    this.exchangeName = exchangeName;
+    this.symbol = symbol;
+}
+
 $(document).ready(function($){
         $(".clickable-row").click(function(){
             // alert($(this).data("href"));
-            window.location = $(this).data("href");
+            var ts = new tradeSystem($(this).data('system_id'),$(this).data('exchange_name'),$(this).data('symbol'))
+            window.location = $(this).data('href');
             }
         );
     }
@@ -46,7 +53,7 @@ $(document).ready(function($){
                         </tr>
                     </thead>
                     {% for item in results.items %}
-                    <tr class="clickable-row" style="cursor: pointer" data-href="{{url_for('tradestats', selectionId=item.selection_id)}}" method="POST">
+                    <tr class="clickable-row" style="cursor: pointer" data-system_id="{{item.system_id}}" data-exchange_name="item.exchange_name" data-symbol="{{item.symbol}}" data-href="{{url_for('tradestats', selectionId=item.selection_id)}}" method="POST">
                         <TD class="c1">{{item.system_id}}</TD>
                         <TD class="c2">{{item.exchange_name}}</TD>
                         <TD class="c3">{{item.symbol}}</TD>

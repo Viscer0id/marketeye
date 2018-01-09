@@ -6,10 +6,14 @@
 	height		: 250px;
 	font-size	: 11px;
 }
+#ohlcChart {
+	width	: 100%;
+	height	: 500px;
+}
 </style>
 
-<!-- Converts our simple HTML table into a DataTable -->
 <script>
+// Converts our simple HTML table into a DataTable
 $(document).ready(function($) {
     $("#trades").dataTable({
         paging: false,
@@ -17,10 +21,87 @@ $(document).ready(function($) {
         info: false
     });
 });
-</script>
 
-<!-- Chart code -->
-<script>
+// Prototype
+function tradeWindow(exchangeName, symbol, entryDate, exitDate) {
+    this.exchangeName = exchangeName;
+    this.symbol = symbol;
+    this.entryDate = entryDate;
+    this.exitDate = exitDate;
+}
+
+// AJAX request to get data for rendering the chart
+$(document).ready(function($){
+    $(".clickable-row").click(function(){
+        // alert($(this).data('trade'));
+        $.ajax({
+            url: "{{url_for('getchartdata')}}",
+            data: new tradeWindow($(this).data('exchange_name'), $(this).data('symbol'),$(this).data('entry_date'),$(this).data('exit_date')),
+            type: 'POST',
+            success: function(result){
+                console.log(result)
+                renderStockChart(JSON.parse(result))
+            } ,
+            error: function(error) {
+                console.log(error);
+            }
+        });
+    });
+});
+
+function renderStockChart(chartData) {
+var chart = AmCharts.makeChart( "ohlcChart", {
+  "type": "serial",
+  "theme": "light",
+  "dataDateFormat":"YYYY-MM-DD",
+  "valueAxes": [ {
+    "position": "left"
+  } ],
+  "graphs": [ {
+    "id": "g1",
+    "balloonText": "Open:<b>[[open]]</b><br>Low:<b>[[low]]</b><br>High:<b>[[high]]</b><br>Close:<b>[[close]]</b><br>",
+    "closeField": "close",
+    "fillColors": "#7f8da9",
+    "highField": "high",
+    "lineColor": "#7f8da9",
+    "lineAlpha": 1,
+    "fillAlphas": 0,
+    "lineThickness": 2,
+    "lowField": "low",
+    "negativeFillColors": "#db4c3c",
+    "negativeLineColor": "#db4c3c",
+    "openField": "open",
+    "title": "Price:",
+    "type": "ohlc",
+    "valueField": "close"
+  } ],
+  "chartScrollbar": {
+    "graph": "g1",
+    "graphType": "line",
+    "scrollbarHeight": 30
+  },
+  "chartCursor": {},
+  "categoryField": "date",
+  "categoryAxis": {
+    "parseDates": true
+  },
+  "dataProvider":chartData,
+  "export": {
+    "enabled": true,
+    "position": "bottom-right"
+  }
+} );
+
+chart.addListener( "rendered", zoomChart );
+zoomChart();
+
+// this method is called when chart is first inited as we listen for "dataUpdated" event
+function zoomChart() {
+  // different zoom methods can be used - zoomToIndexes, zoomToDates, zoomToCategoryValues
+  chart.zoomToIndexes( 10, 20 );
+}
+
+// Code to render Piechart
 var chart = AmCharts.makeChart("plpie", {
     "type": "pie",
     "theme": "light",
@@ -46,11 +127,16 @@ var chart = AmCharts.makeChart("plpie", {
         "enabled": false
     }
 });
+}
 </script>
 
 <div class="container-fluid">
     <div class="row">
-        <div class="col-md-12" style="text-align: center"><h3>{{summary.system_id}} {{summary.exchange_name}} {{summary.symbol}}</h3></div>
+        <div class="col-md-12" style="text-align: center">
+            <h3>{{summary.system_id}}</h3>
+            <h3>{{summary.exchange_name}}</h3>
+            <h3>{{summary.symbol}}</h3>
+        </div>
     </div>
     <div class="row">
         <div class="col-md-9">
@@ -68,7 +154,7 @@ var chart = AmCharts.makeChart("plpie", {
                         </tr>
                     </thead>
                     {% for trade in trades %}
-                    <tr class="clickable-row" style="cursor: pointer" data-href="">
+                    <tr class="clickable-row" style="cursor: pointer" data-system_id="{{summary.system_id}}" data-exchange_name="{{summary.exchange_name}}" data-symbol="{{summary.symbol}}" data-entry_date="{{trade.entry_date}}" data-exit_date="{{trade.exit_date}}" method="POST">
                         <td>{{trade.entry_date}}</td>
                         <td>{{trade.exit_date}}</td>
                         <td>{{trade.days_in_trade}}</td>
@@ -84,6 +170,12 @@ var chart = AmCharts.makeChart("plpie", {
         <div class="col-md-3">
             <div id="plpie"></div>
         </div>
+    </div>
+    <div class="row">
+        <div class="col-md-9">
+            <div id="ohlcChart"></div>
+        </div>
+        <div class="col-md-3"></div>
     </div>
 </div>
 {% endblock %}

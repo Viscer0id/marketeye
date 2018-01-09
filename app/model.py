@@ -34,6 +34,7 @@ class TradeStats(db.Model):
     trade_commentary = db.Column(db.Text, primary_key=False)
     selection_id = db.Column(db.String, primary_key=False, unique=False)
 
+
 class SymbolData(db.Model):
     __tablename_ = 'symbol_data'
     __table_args__ = {"schema": "nds"}
@@ -45,3 +46,14 @@ class SymbolData(db.Model):
     low_price = db.Column(db.REAL, primary_key=False)
     close_price = db.Column(db.REAL, primary_key=False)
     volume = db.Column(db.Integer, primary_key=False)
+
+    @property
+    def as_dict(self):
+        return {"exchange": self.exchange_name
+            , "symbol": self.symbol
+            , "date": self.trade_date.isoformat()
+            , "open": self.open_price
+            , "high": self.high_price
+            , "low": self.low_price
+            , "close": self.close_price
+            , "volume": self.volume}
